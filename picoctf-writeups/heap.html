@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="../global.css">
+    <title>Blender's blog or something | PicoCTF Writeups | heap 0-3</title>
+    <script src="/index.js"></script>
+</head>
+
+<body onload="prepareLinks()"></body>
+    <div class="nav">
+        <a href="">Main page</a>
+        <a href="">Blog index</a>
+    </div>
+
+    <h1 class="title">PicoCTF: Heap 0-3</h1>
+    <hr>
+
+    <div class="main-content">
+        <h1>Heap 0</h1>
+        <p>Trivial, honestly</p>
+
+        <hr>
+
+        <h1>Heap 1</h1>
+        <h2>Background</h2>
+        <p>The "print flag" option will give  the flag if the value of <code>safe_var</code> is equal to "pico" (is "bico" at start).</p>
+        <p>Also pretty trivial - find the size of the region allocated to input (subtract the two addresses shown when you "print heap"), fill that up with garbage, then add "pico" to the end to overwrite <code>safe_var</code>.</p>
+
+        <hr>
+
+        <h1>Heap 2</h1>
+        <p>Fun!</p>
+        <p><a href="github.com/noamgariani11/picoCTF-2024-Writeup">[noamgariani11/picoCTF-2024-Writeup]</a> was a good writeup that helped me.</p>
+
+        <h2>Background</h2>
+        <p>You need to write the address of the <code>win()</code> function to x.</p>
+        <p>The order of bytes in the address needs to be flipped because endianness.</p>
+        
+        <h2>Steps</h2>
+        <p>Since the binary is provided, we can use objdump (on linux) to find the address of the win() function, relative to the base address of the binary.</p>
+        <p><code>objdump -D chall | grep win</code> gives us: <code>00000000004011a0 &lt;win&gt;</code> <!-- &lt and &gt represent < and > --></p>
+        <p>This suggests that <code>win()</code> is located at address <code>0x00000000004011a0</code> relative to the base address, so we need to reverse it, encode it as hex values, and put it into x.</p>
+        <p>We can do that with echo, and as a bonus, we can make it a one-liner: <code>echo -e "2\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\xa0\x11\x40\x00\x00\x00\x00\x00\n3\n4" | nc &lt;your challenge instance address and port&gt;</code>!</p>
+
+        <hr>
+
+        <h1>Heap 3</h1>
+        <p> A little weird.</p>
+
+        <h2>Background</h2>
+        <p>An object, <code>x</code>, is allocated with malloc and has some data written to it. You have the option to free the memory; however, the data in <code>x</code> is still accessed even after the free.</p>
+        <p>By freeing the memory for <code>x</code>, the next object we allocate will occupy the same region of memory as <code>x</code>. We can write our own data there that will be accessed by the functions that read the data in x!</p>
+        <h2>Steps</h2>
+        <p>The first step is obviously to free <code>x</code> with option 5.</p>
+        <p>Then, we allocate a new object with option 2. The object size should be between 25 and 40 (inclusive). (on MSVC 19.41.34123 for x86, only 35 to 40 works; yet a similar program allows any size. I think it has to do with memory protection or optimisations or something, so I suppose allocating the same size as the struct is best.)</p>
+        <p>The payload can be <code>1234567890abcdefghijABCDEFGHIJpico</code>, or any string with 30 characters before "pico". Note: 1st character can't be a 0.</p>
+        <p>Then, we can use option 1 or 3 to verify that the flag was overwritten, and use 4 to get the flag.</p>
+    </div>
+</body>
+</html>
+
+
